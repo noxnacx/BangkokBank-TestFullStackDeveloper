@@ -81,3 +81,89 @@ user อื่น ขัดกับ privacy invariant ที่ต้องไ�
 `forbidNonWhitelisted: true` ไว้ด้วย ระบบ **reject ทันทีด้วย 400** แทนที่จะ strip
 เงียบๆ — เข้มกว่าที่คาดไว้ ถือเป็นพฤติกรรมที่ดีกว่าเดิม (ชัดเจนกว่าสำหรับ client
 ว่าเขาส่ง field ที่ไม่ควรส่งมา) จึงตัดสินใจคงค่านี้ไว้แทนที่จะปรับให้ strip เงียบๆ
+
+## /bookmarks
+
+### Endpoints
+
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| GET | /bookmarks | List bookmarks ของ user ที่ login อยู่ (รองรับ `?collectionId=` filter) | Required |
+| GET | /bookmarks/:id | Get one bookmark | Required |
+| POST | /bookmarks | Create bookmark ใหม่ | Required |
+| PUT | /bookmarks/:id | Full update | Required |
+| PATCH | /bookmarks/:id | Partial update | Required |
+| DELETE | /bookmarks/:id | Delete bookmark | Required |
+
+### Request/Response shape
+
+**Bookmark object:**
+```json
+{
+  "id": "string (cuid)",
+  "url": "string",
+  "title": "string",
+  "notes": "string | null",
+  "collectionId": "string | null",
+  "ownerId": "string",
+  "createdAt": "ISO datetime",
+  "updatedAt": "ISO datetime"
+}
+```
+
+**POST /bookmarks — body:**
+```json
+{
+  "url": "string (required)",
+  "title": "string (required)",
+  "notes": "string (optional)",
+  "collectionId": "string (optional)"
+}
+```
+`ownerId` มาจาก JWT `sub` claim เท่านั้น เช่นเดียวกับ `/collections`
+
+### Ownership enforcement
+
+ใช้ pattern เดียวกับ `/collections` ทุกประการ — ดูรายละเอียดเต็มในหัวข้อ `/collections`
+ด้านบน (query-level filter ด้วย `{ id, ownerId }`, atomic update/delete ผ่าน `P2025` catch,
+คืน `404` ไม่ใช่ `403` สำหรับ resource ที่ไม่ใช่ของ user)
+
+### จุดต่างจาก /collections: Cross-owner `collectionId` validation
+
+เพราะ `Bookmark` มี foreign reference ไปยัง `Collection` ผ่าน `collectionId` (nullable)
+ต้องป้องกันไม่ให้ user A ผูก bookmark ของตัวเองเข้ากับ `collectionId` ของ user B
+
+**การตรวจสอบ:** `assertCollectionOwnership()` เช็คผ่าน
+`collection.findUnique({ where: { id: collectionId, ownerId } })` — `collectionId` ที่ไม่มี
+อยู่จริง กับที่เป็นของ user อื่น คืนค่า `null` เหมือนกันทุกกรณี (ใช้หลักการเดียวกับ
+ownership pattern ด้านบน) ไม่รั่วว่า collection นั้น "มีอยู่จริงแต่ไม่ใช่ของคุณ" หรือ
+"ไม่มีอยู่เลย"
+
+**ทำไมเลือก `400` ไม่ใช่ `404` ตรงนี้:** resource ที่ URL ชี้ถึง (`/bookmarks` หรือ
+`/bookmarks/:id`) หาเจอปกติ — ปัญหาอยู่ที่ field ใน **body** ที่ส่งมาไม่ valid สำหรับ
+user นี้ ตรงกับความหมายมาตรฐานของ `400` (invalid input) มากกว่า `404` ซึ่งสงวนไว้
+สำหรับ "ไม่พบ resource ตาม URL path" เท่านั้น (แบบที่ `/collections/:id` และ
+`/bookmarks/:id` ใช้อยู่) — แยกความหมายชัดเจน: **404 = "path นี้ไม่มี", 400 = "ข้อมูล
+ใน body ใช้ไม่ได้"**
+
+### จุดต่างจาก /collections: PUT vs PATCH กับ nullable field
+
+`Bookmark` มี field nullable สองตัว (`notes`, `collectionId`) ต่างจาก `Collection` ที่มี
+แค่ `name` เป็น field เดียว จึงต้องแยก semantics ให้ชัด:
+
+- **PATCH** — field ที่ไม่ส่งมา = ไม่แตะ (`undefined` ให้ Prisma ข้ามไปเฉยๆ), ส่ง
+  `null` ตรงๆ = เคลียร์ค่า (ใช้ `@IsOptional()` ที่ยอมรับทั้ง `undefined`/`null` โดยไม่ต้อง
+  มี flag พิเศษเพิ่ม)
+- **PUT** — full replace: ไม่ส่ง `notes`/`collectionId` มา = เคลียร์เป็น `null` (ทำใน
+  service ด้วย `?? null`) เพราะความหมายของ PUT คือ "นี่คือ state ทั้งหมดของ resource นี้
+  ตอนนี้" ไม่ใช่การอัปเดตบางส่วน
+
+### ยืนยันด้วย automated + live smoke test
+
+- Unit test 26 tests ครอบ negative case: user A ใส่ `collectionId` ของ user B → `400`
+  ไม่ถูกสร้าง/ไม่ถูกแก้; user A เข้าถึง/แก้/ลบ bookmark ของ user B → `404`
+- Live smoke test ผ่าน HTTP จริงด้วย JWT ที่เซ็นจริงบน DB จริง (ไม่ใช่ mock): ยืนยันว่า
+  user A เอา `collectionId` ของ user B มาสร้าง/ย้าย bookmark ไม่ได้จริง (`400`,
+  ไม่ถูกสร้าง/ไม่ถูกย้าย), user B มองไม่เห็น/แก้ไม่ได้/ลบไม่ได้ bookmark ของ user A เลย
+  (`404` ทุกท่า, ไม่โผล่ใน list ของ B), และ `PUT` เคลียร์ `collectionId` เป็น `null` จริง
+  ตามที่ออกแบบไว้

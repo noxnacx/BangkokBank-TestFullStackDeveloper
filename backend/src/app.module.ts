@@ -6,9 +6,10 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthGuard } from './auth/auth.guard';
 import { MeController } from './auth/me.controller';
 import { CollectionsModule } from './collections/collections.module';
+import { BookmarksModule } from './bookmarks/bookmarks.module';
 
 @Module({
-  imports: [PrismaModule, CollectionsModule],
+  imports: [PrismaModule, CollectionsModule, BookmarksModule],
   controllers: [AppController, MeController],
   providers: [
     AppService,
