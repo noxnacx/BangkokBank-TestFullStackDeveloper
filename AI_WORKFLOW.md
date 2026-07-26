@@ -90,3 +90,34 @@ MeController โดยไม่ import AppModule เต็ม) ซึ่งแ�
 ครั้งต่อไปควรถาม agent เช็ค dependency conflict (Prisma version vs 
 test runner) ตั้งแต่ตอน scaffold แทนที่จะไปเจอตอนเขียน test — 
 จะได้ตัดสินใจเรื่อง Jest config ตั้งแต่ต้น ไม่ต้องแก้ทีหลัง
+
+
+**อัปเดต — แก้ปัญหาจริงแล้ว (ไม่ใช่แค่เลี่ยง):**
+
+Root cause จริงไม่ใช่ Prisma generator format (schema ตั้ง `moduleFormat: 
+"cjs"` ถูกอยู่แล้ว) แต่เป็น `tsconfig.json` ที่ตั้ง `"module": "nodenext"` 
+ทำให้ ts-jest ปล่อย dynamic `import()` ผ่านไปตรงๆ แทนที่จะ downlevel เป็น 
+`require()` — Jest CJS runtime เลยรันไม่ได้
+
+**Fix จริง:** override compiler options เฉพาะตอน ts-jest transform ให้บังคับ
+`module: "CommonJS"` (`test/jest-e2e.json` + `package.json` unit test config)
+ทำให้ TS downlevel import เป็น require() ให้อัตโนมัติ ไม่ต้องพึ่ง 
+`--experimental-vm-modules` และไม่ต้องแยก minimal test module อีกต่อไป
+
+ผลคือ `app.e2e-spec.ts` ที่ import `AppModule` เต็ม (มี `PrismaModule` จริง) 
+รันผ่านได้แล้ว — ของเดิมที่เขียนว่า "เหลือหนี้ทางเทคนิค" ตอนนี้ชำระแล้ว
+
+**บทเรียนที่แท้จริง:**
+เมื่อเจอ error ที่ stack trace ชี้ไปที่ dependency (เช่น Prisma) อย่ารีบสรุป
+ว่า dependency นั้นเป็นสาเหตุ ควรไล่ดู compiler/transpiler settings 
+(tsconfig, ts-jest config) ก่อน เพราะ error message ที่โผล่มาจาก 
+`node_modules` มักมีต้นตอจริงอยู่ที่การตั้งค่าฝั่งเราเอง ไม่ใช่ตัว 
+dependency พัง — การ debug ที่ดีคือไล่จาก config ของเราก่อน 
+แล้วค่อยสงสัย dependency เป็นลำดับถัดไป
+
+**ข้อควรระวังสำหรับขั้นตอนถัดไป (เขียนไว้กันลืม):**
+Auth flow test ผ่านได้เพราะ AuthGuard บล็อกที่ 401 ก่อนถึง DB จริง — 
+`$connect()` ของ pg adapter เป็น lazy connect เลยไม่ error แม้ไม่มี DB รัน 
+อยู่ พอเขียน e2e test ของ `/collections` และ `/bookmarks` ที่มี query จริง 
+(`prisma.collection.findMany()`) จะ**ต้องมี Postgres จริงรันอยู่** 
+(ผ่าน Docker) ก่อนถึงจะทดสอบได้ — เตรียมเรื่องนี้ไว้ก่อนเขียน CRUD tests
