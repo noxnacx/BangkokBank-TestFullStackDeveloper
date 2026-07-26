@@ -12,3 +12,33 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// No User model. `ownerId` is the Auth0 `sub` claim, taken directly off the
+// already-verified JWT (see AuthGuard) — there's no local profile data
+// (name, email, prefs) to justify syncing users into this DB yet. See the
+// chat response for the full reasoning and the trigger for revisiting this.
+
+model Collection {
+  id        String     @id @default(cuid())
+  name      String
+  ownerId   String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  bookmarks Bookmark[]
+
+  @@index([ownerId])
+}
+
+model Bookmark {
+  id           String      @id @default(cuid())
+  url          String
+  title        String
+  notes        String?
+  ownerId      String
+  collectionId String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  collection   Collection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+
+  @@index([ownerId])
+}

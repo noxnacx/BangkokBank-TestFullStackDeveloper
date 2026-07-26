@@ -28,3 +28,46 @@
 
 **ผลลัพธ์:** auth guard จะ verify JWT access token ด้วย RS256 ผ่าน JWKS ของ tenant
 และเช็ค `aud` = `https://bbl-candidate-test-api`
+
+## 2026-07-27 — ไม่มี User model, ใช้ ownerId ผูกกับ Auth0 `sub` ตรงๆ
+
+**บริบท:** ออกแบบ `schema.prisma` สำหรับ `Collection` และ `Bookmark` ต้องตัดสินใจว่า
+จะ sync user จาก Auth0 มาเก็บเป็นตาราง `User` ของตัวเองไหม หรือใช้ `ownerId`
+(Auth0 `sub` claim ที่ verify แล้วใน `AuthGuard`) เป็น string อ้างอิงตรงๆ โดยไม่มีตาราง
+`User` เลย
+
+**Decision:** ไม่สร้าง `User` model — `ownerId` เป็น `String` column ธรรมดาในทั้ง
+`Collection` และ `Bookmark` ผูกกับ `sub` claim โดยตรง
+
+**เหตุผล:**
+- Auth0 เป็น source of truth ของ identity อยู่แล้ว และ `sub` ผ่านการ verify
+  signature/aud/iss/exp ใน `AuthGuard` ก่อนถึง controller ทุกครั้ง — เชื่อถือได้โดยไม่ต้อง
+  มีตาราง `User` มายืนยันซ้ำ
+- ไม่มี local profile data (ชื่อ, email, preference) ที่ต้องเก็บตอนนี้ — เพิ่มตาราง
+  `User` ตอนนี้คือ speculative (YAGNI)
+- FK ไปตาราง `User` ก็ไม่ได้ enforce integrity ที่มีความหมายจริง เพราะ "user ที่ valid"
+  นิยามโดย Auth0 ไม่ใช่โดย row ในตารางเรา
+
+**จุดที่ต้องกลับมาคิดใหม่:** ถ้าทำ feature แชร์ collection ระหว่างหลาย user จะต้องมี
+join table (เช่น `CollectionMember`) ตอนนั้นค่อยประเมินอีกครั้งว่าต้อง sync ข้อมูล
+user จริงไหม (เช่น โชว์ชื่อ/อีเมลสมาชิกโดยไม่ยิง Auth0 Management API ทุกครั้ง)
+
+## 2026-07-27 — `onDelete: SetNull` สำหรับ `Bookmark.collectionId`
+
+**บริบท:** เมื่อลบ `Collection` ต้องตัดสินใจว่า `Bookmark` ที่อยู่ใน collection นั้นควร
+เกิดอะไรขึ้น มี 3 ทางเลือก: `Cascade` (ลบตาม), `SetNull` (ตัดความสัมพันธ์ กลายเป็น
+uncategorized), `Restrict` (ห้ามลบถ้ายังมี bookmark อ้างอิง)
+
+**Decision:** เลือก `onDelete: SetNull`
+
+**เหตุผล:**
+- ตรงกับ design เดิมที่ `collectionId` เป็น nullable อยู่แล้ว — "ไม่มี collection"
+  (uncategorized) เป็นสถานะปกติของ `Bookmark` ไม่ใช่ error state
+- ป้องกันไม่ให้การลบ collection เดียวทำลาย bookmark หลายอันแบบเงียบๆ โดยไม่มีการ
+  ยืนยันแยกต่างหาก (ต่างจาก `Cascade` ที่ลบทันทีและกู้คืนไม่ได้)
+- ยังไม่ทำ feature แชร์ collection ตอนนี้ จึงยังไม่ต้องการความเข้มงวดระดับ `Restrict`
+
+**ทบทวนใหม่เมื่อไร:** ถ้าทำ feature แชร์ collection ระหว่างหลาย user จริง ให้กลับมา
+พิจารณา `Restrict` แทน เพราะตอนนั้นการลบ collection โดยเจ้าของคนเดียวอาจกระทบ
+bookmark ที่คนอื่นมองว่าเป็นของตัวเองอยู่ ต้องมี confirmation step ที่ชัดเจนกว่า
+`SetNull` เงียบๆ
