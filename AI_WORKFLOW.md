@@ -1,3 +1,14 @@
+## TODO / Pending
+
+- **[2026-07-27] แทนที่ placeholder ownerId ด้วย sub จริง**: `backend/prisma/seed.ts`
+  ใช้ `OWNER_A = "auth0|PLACEHOLDER-CANDIDATE-REPLACE-ME"` แทน sub จริงของ
+  `candidate@test.com` เพราะตอนเขียนยังไม่มีสิทธิ์เข้า Auth0 Dashboard และยังไม่มี
+  frontend auth flow ให้ login จริงเพื่อ decode token ได้
+  **ต้องแก้ก่อนใช้ seed data นี้ทดสอบ ownership isolation จริงจัง** — ไม่งั้น
+  test จะทดสอบกับ user ปลอมที่ login จริงไม่ได้ วิธีแก้: login ด้วย
+  `candidate@test.com` ผ่าน frontend auth flow เมื่อพร้อมแล้ว, decode `sub`
+  claim จาก access token ที่ได้, แล้วแทนค่าใน `OWNER_A`
+
 ## Prompt ที่ได้ผลดี
 
 ### ตัวอย่าง 1: Auth Guard implementation
