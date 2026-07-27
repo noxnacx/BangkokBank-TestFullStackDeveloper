@@ -10,6 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CollectionsService = void 0;
+const node_crypto_1 = require("node:crypto");
 const common_1 = require("@nestjs/common");
 const client_1 = require("../../generated/prisma/client");
 const prisma_service_1 = require("../prisma/prisma.service");
@@ -63,6 +64,55 @@ let CollectionsService = class CollectionsService {
             where: { collectionId: id, ownerId },
             orderBy: { createdAt: 'desc' },
         });
+    }
+    async createShareLink(id, ownerId) {
+        const shareToken = (0, node_crypto_1.randomBytes)(32).toString('base64url');
+        try {
+            return await this.prisma.collection.update({
+                where: { id, ownerId },
+                data: { shareToken },
+            });
+        }
+        catch (error) {
+            this.rethrowAsNotFoundIfMissing(error);
+        }
+    }
+    async revokeShareLink(id, ownerId) {
+        try {
+            await this.prisma.collection.update({
+                where: { id, ownerId },
+                data: { shareToken: null },
+            });
+        }
+        catch (error) {
+            this.rethrowAsNotFoundIfMissing(error);
+        }
+    }
+    async getSharedView(token) {
+        const collection = await this.prisma.collection.findUnique({
+            where: { shareToken: token },
+        });
+        if (!collection) {
+            throw new common_1.NotFoundException('Shared collection not found');
+        }
+        const bookmarks = await this.prisma.bookmark.findMany({
+            where: { collectionId: collection.id },
+            orderBy: { createdAt: 'desc' },
+        });
+        return {
+            id: collection.id,
+            name: collection.name,
+            createdAt: collection.createdAt,
+            updatedAt: collection.updatedAt,
+            bookmarks: bookmarks.map((b) => ({
+                id: b.id,
+                url: b.url,
+                title: b.title,
+                notes: b.notes,
+                createdAt: b.createdAt,
+                updatedAt: b.updatedAt,
+            })),
+        };
     }
     rethrowAsNotFoundIfMissing(error) {
         if (error instanceof client_1.Prisma.PrismaClientKnownRequestError &&

@@ -10,6 +10,7 @@ export declare class CollectionsController {
         id: string;
         name: string;
         ownerId: string;
+        shareToken: string | null;
         createdAt: Date;
         updatedAt: Date;
     }[]>;
@@ -17,6 +18,7 @@ export declare class CollectionsController {
         id: string;
         name: string;
         ownerId: string;
+        shareToken: string | null;
         createdAt: Date;
         updatedAt: Date;
     }>;
@@ -34,6 +36,7 @@ export declare class CollectionsController {
         id: string;
         name: string;
         ownerId: string;
+        shareToken: string | null;
         createdAt: Date;
         updatedAt: Date;
     }, never, import("@prisma/client/runtime/client").DefaultArgs, {
@@ -43,6 +46,7 @@ export declare class CollectionsController {
         id: string;
         name: string;
         ownerId: string;
+        shareToken: string | null;
         createdAt: Date;
         updatedAt: Date;
     }>;
@@ -50,8 +54,18 @@ export declare class CollectionsController {
         id: string;
         name: string;
         ownerId: string;
+        shareToken: string | null;
         createdAt: Date;
         updatedAt: Date;
     }>;
     remove(id: string, req: AuthenticatedRequest): Promise<void>;
+    createShareLink(id: string, req: AuthenticatedRequest): Promise<{
+        id: string;
+        name: string;
+        ownerId: string;
+        shareToken: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    revokeShareLink(id: string, req: AuthenticatedRequest): Promise<void>;
 }

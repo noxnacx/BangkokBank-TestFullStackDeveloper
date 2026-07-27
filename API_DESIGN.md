@@ -147,7 +147,7 @@ user นี้ ตรงกับความหมายมาตรฐาน�
 ใน body ใช้ไม่ได้"**
 
 ### จุดต่างจาก /collections: PUT vs PATCH กับ nullable field
-
+ช
 `Bookmark` มี field nullable สองตัว (`notes`, `collectionId`) ต่างจาก `Collection` ที่มี
 แค่ `name` เป็น field เดียว จึงต้องแยก semantics ให้ชัด:
 

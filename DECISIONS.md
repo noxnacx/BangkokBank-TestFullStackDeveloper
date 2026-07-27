@@ -71,3 +71,29 @@ uncategorized), `Restrict` (ห้ามลบถ้ายังมี bookmark 
 พิจารณา `Restrict` แทน เพราะตอนนั้นการลบ collection โดยเจ้าของคนเดียวอาจกระทบ
 bookmark ที่คนอื่นมองว่าเป็นของตัวเองอยู่ ต้องมี confirmation step ที่ชัดเจนกว่า
 `SetNull` เงียบๆ
+
+## 2026-07-27 — Share collection: read-only token link แทน full multi-owner
+
+**บริบท:** โจทย์ §3.3 ให้ requirement กำกวม "A user may want to share 
+a collection with someone else" ไม่บังคับ implement เต็ม แค่ต้อง 
+ตัดสินใจและมีเหตุผลรองรับ
+
+**Decision:** Implement แบบ read-only share link (shareToken บน 
+Collection) แทนที่จะทำ full multi-owner model (join table 
+CollectionMember)
+
+**เหตุผล:**
+- ไม่ต้องแตะ ownership pattern เดิมที่ทำไว้แน่นหนา (query-level filter 
+  ด้วย ownerId เดี่ยว) เลยแม้แต่นิดเดียว — ความเสี่ยงต่ำสุด
+- Read-only ถูก enforce ที่ระดับ routing (controller แยกไม่มี mutate 
+  method) ไม่ใช่แค่ business logic — safe by construction
+- ยังคง privacy invariant เดิมไว้ครบ (คนอื่นเข้าไม่ได้ผ่าน endpoint 
+  ปกติ, เห็นแค่สิ่งที่ token อนุญาตเท่านั้น)
+
+**Trade-off ที่ตัดออก:** ไม่รองรับ collaborative editing (คนที่ได้ 
+share link แก้ไขไม่ได้), ไม่มี permission ระดับ user-to-user จริง 
+(ใครมี token ก็ดูได้ ไม่ผูกกับ identity ของคนที่เข้ามาดู)
+
+**ถ้าจะทำ full model ในอนาคต:** ต้องมี CollectionMember{ collectionId, 
+userId, role } และแก้ ownership check ทั้งระบบให้รองรับหลาย owner — 
+งานใหญ่กว่ามาก ไม่คุ้มกับเวลาที่มี

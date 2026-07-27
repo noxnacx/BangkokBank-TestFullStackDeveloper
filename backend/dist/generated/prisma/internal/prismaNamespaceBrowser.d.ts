@@ -26,6 +26,7 @@ export declare const CollectionScalarFieldEnum: {
     readonly id: "id";
     readonly name: "name";
     readonly ownerId: "ownerId";
+    readonly shareToken: "shareToken";
     readonly createdAt: "createdAt";
     readonly updatedAt: "updatedAt";
 };

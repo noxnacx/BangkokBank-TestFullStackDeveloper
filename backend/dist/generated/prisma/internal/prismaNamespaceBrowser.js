@@ -58,6 +58,7 @@ exports.CollectionScalarFieldEnum = {
     id: 'id',
     name: 'name',
     ownerId: 'ownerId',
+    shareToken: 'shareToken',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
 };

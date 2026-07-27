@@ -9,13 +9,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CollectionsModule = void 0;
 const common_1 = require("@nestjs/common");
 const collections_controller_1 = require("./collections.controller");
+const shared_controller_1 = require("./shared.controller");
 const collections_service_1 = require("./collections.service");
 let CollectionsModule = class CollectionsModule {
 };
 exports.CollectionsModule = CollectionsModule;
 exports.CollectionsModule = CollectionsModule = __decorate([
     (0, common_1.Module)({
-        controllers: [collections_controller_1.CollectionsController],
+        controllers: [collections_controller_1.CollectionsController, shared_controller_1.SharedController],
         providers: [collections_service_1.CollectionsService],
     })
 ], CollectionsModule);

@@ -6,6 +6,7 @@ import About from './pages/About'
 import Callback from './pages/Callback'
 import Collections from './pages/Collections'
 import Bookmarks from './pages/Bookmarks'
+import Shared from './pages/Shared'
 import LoginButton from './auth/LoginButton'
 import LogoutButton from './auth/LogoutButton'
 import RequireAuth from './auth/RequireAuth'
@@ -40,6 +41,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
             <Route path="/callback" element={<Callback />} />
+            <Route path="/shared/:token" element={<Shared />} />
             <Route
               path="/collections"
               element={

@@ -318,9 +318,6 @@ export type BookmarkUncheckedUpdateManyWithoutCollectionNestedInput = {
     updateMany?: Prisma.BookmarkUpdateManyWithWhereWithoutCollectionInput | Prisma.BookmarkUpdateManyWithWhereWithoutCollectionInput[];
     deleteMany?: Prisma.BookmarkScalarWhereInput | Prisma.BookmarkScalarWhereInput[];
 };
-export type NullableStringFieldUpdateOperationsInput = {
-    set?: string | null;
-};
 export type BookmarkCreateWithoutCollectionInput = {
     id?: string;
     url: string;

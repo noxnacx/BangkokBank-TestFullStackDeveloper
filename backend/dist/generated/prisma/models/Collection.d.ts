@@ -10,6 +10,7 @@ export type CollectionMinAggregateOutputType = {
     id: string | null;
     name: string | null;
     ownerId: string | null;
+    shareToken: string | null;
     createdAt: Date | null;
     updatedAt: Date | null;
 };
@@ -17,6 +18,7 @@ export type CollectionMaxAggregateOutputType = {
     id: string | null;
     name: string | null;
     ownerId: string | null;
+    shareToken: string | null;
     createdAt: Date | null;
     updatedAt: Date | null;
 };
@@ -24,6 +26,7 @@ export type CollectionCountAggregateOutputType = {
     id: number;
     name: number;
     ownerId: number;
+    shareToken: number;
     createdAt: number;
     updatedAt: number;
     _all: number;
@@ -32,6 +35,7 @@ export type CollectionMinAggregateInputType = {
     id?: true;
     name?: true;
     ownerId?: true;
+    shareToken?: true;
     createdAt?: true;
     updatedAt?: true;
 };
@@ -39,6 +43,7 @@ export type CollectionMaxAggregateInputType = {
     id?: true;
     name?: true;
     ownerId?: true;
+    shareToken?: true;
     createdAt?: true;
     updatedAt?: true;
 };
@@ -46,6 +51,7 @@ export type CollectionCountAggregateInputType = {
     id?: true;
     name?: true;
     ownerId?: true;
+    shareToken?: true;
     createdAt?: true;
     updatedAt?: true;
     _all?: true;
@@ -78,6 +84,7 @@ export type CollectionGroupByOutputType = {
     id: string;
     name: string;
     ownerId: string;
+    shareToken: string | null;
     createdAt: Date;
     updatedAt: Date;
     _count: CollectionCountAggregateOutputType | null;
@@ -94,6 +101,7 @@ export type CollectionWhereInput = {
     id?: Prisma.StringFilter<"Collection"> | string;
     name?: Prisma.StringFilter<"Collection"> | string;
     ownerId?: Prisma.StringFilter<"Collection"> | string;
+    shareToken?: Prisma.StringNullableFilter<"Collection"> | string | null;
     createdAt?: Prisma.DateTimeFilter<"Collection"> | Date | string;
     updatedAt?: Prisma.DateTimeFilter<"Collection"> | Date | string;
     bookmarks?: Prisma.BookmarkListRelationFilter;
@@ -102,12 +110,14 @@ export type CollectionOrderByWithRelationInput = {
     id?: Prisma.SortOrder;
     name?: Prisma.SortOrder;
     ownerId?: Prisma.SortOrder;
+    shareToken?: Prisma.SortOrderInput | Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
     updatedAt?: Prisma.SortOrder;
     bookmarks?: Prisma.BookmarkOrderByRelationAggregateInput;
 };
 export type CollectionWhereUniqueInput = Prisma.AtLeast<{
     id?: string;
+    shareToken?: string;
     AND?: Prisma.CollectionWhereInput | Prisma.CollectionWhereInput[];
     OR?: Prisma.CollectionWhereInput[];
     NOT?: Prisma.CollectionWhereInput | Prisma.CollectionWhereInput[];
@@ -116,11 +126,12 @@ export type CollectionWhereUniqueInput = Prisma.AtLeast<{
     createdAt?: Prisma.DateTimeFilter<"Collection"> | Date | string;
     updatedAt?: Prisma.DateTimeFilter<"Collection"> | Date | string;
     bookmarks?: Prisma.BookmarkListRelationFilter;
-}, "id">;
+}, "id" | "shareToken">;
 export type CollectionOrderByWithAggregationInput = {
     id?: Prisma.SortOrder;
     name?: Prisma.SortOrder;
     ownerId?: Prisma.SortOrder;
+    shareToken?: Prisma.SortOrderInput | Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
     updatedAt?: Prisma.SortOrder;
     _count?: Prisma.CollectionCountOrderByAggregateInput;
@@ -134,6 +145,7 @@ export type CollectionScalarWhereWithAggregatesInput = {
     id?: Prisma.StringWithAggregatesFilter<"Collection"> | string;
     name?: Prisma.StringWithAggregatesFilter<"Collection"> | string;
     ownerId?: Prisma.StringWithAggregatesFilter<"Collection"> | string;
+    shareToken?: Prisma.StringNullableWithAggregatesFilter<"Collection"> | string | null;
     createdAt?: Prisma.DateTimeWithAggregatesFilter<"Collection"> | Date | string;
     updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Collection"> | Date | string;
 };
@@ -141,6 +153,7 @@ export type CollectionCreateInput = {
     id?: string;
     name: string;
     ownerId: string;
+    shareToken?: string | null;
     createdAt?: Date | string;
     updatedAt?: Date | string;
     bookmarks?: Prisma.BookmarkCreateNestedManyWithoutCollectionInput;
@@ -149,6 +162,7 @@ export type CollectionUncheckedCreateInput = {
     id?: string;
     name: string;
     ownerId: string;
+    shareToken?: string | null;
     createdAt?: Date | string;
     updatedAt?: Date | string;
     bookmarks?: Prisma.BookmarkUncheckedCreateNestedManyWithoutCollectionInput;
@@ -157,6 +171,7 @@ export type CollectionUpdateInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     name?: Prisma.StringFieldUpdateOperationsInput | string;
     ownerId?: Prisma.StringFieldUpdateOperationsInput | string;
+    shareToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     bookmarks?: Prisma.BookmarkUpdateManyWithoutCollectionNestedInput;
@@ -165,6 +180,7 @@ export type CollectionUncheckedUpdateInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     name?: Prisma.StringFieldUpdateOperationsInput | string;
     ownerId?: Prisma.StringFieldUpdateOperationsInput | string;
+    shareToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     bookmarks?: Prisma.BookmarkUncheckedUpdateManyWithoutCollectionNestedInput;
@@ -173,6 +189,7 @@ export type CollectionCreateManyInput = {
     id?: string;
     name: string;
     ownerId: string;
+    shareToken?: string | null;
     createdAt?: Date | string;
     updatedAt?: Date | string;
 };
@@ -180,6 +197,7 @@ export type CollectionUpdateManyMutationInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     name?: Prisma.StringFieldUpdateOperationsInput | string;
     ownerId?: Prisma.StringFieldUpdateOperationsInput | string;
+    shareToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -187,6 +205,7 @@ export type CollectionUncheckedUpdateManyInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     name?: Prisma.StringFieldUpdateOperationsInput | string;
     ownerId?: Prisma.StringFieldUpdateOperationsInput | string;
+    shareToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -194,6 +213,7 @@ export type CollectionCountOrderByAggregateInput = {
     id?: Prisma.SortOrder;
     name?: Prisma.SortOrder;
     ownerId?: Prisma.SortOrder;
+    shareToken?: Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
     updatedAt?: Prisma.SortOrder;
 };
@@ -201,6 +221,7 @@ export type CollectionMaxOrderByAggregateInput = {
     id?: Prisma.SortOrder;
     name?: Prisma.SortOrder;
     ownerId?: Prisma.SortOrder;
+    shareToken?: Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
     updatedAt?: Prisma.SortOrder;
 };
@@ -208,6 +229,7 @@ export type CollectionMinOrderByAggregateInput = {
     id?: Prisma.SortOrder;
     name?: Prisma.SortOrder;
     ownerId?: Prisma.SortOrder;
+    shareToken?: Prisma.SortOrder;
     createdAt?: Prisma.SortOrder;
     updatedAt?: Prisma.SortOrder;
 };
@@ -217,6 +239,9 @@ export type CollectionNullableScalarRelationFilter = {
 };
 export type StringFieldUpdateOperationsInput = {
     set?: string;
+};
+export type NullableStringFieldUpdateOperationsInput = {
+    set?: string | null;
 };
 export type DateTimeFieldUpdateOperationsInput = {
     set?: Date | string;
@@ -239,6 +264,7 @@ export type CollectionCreateWithoutBookmarksInput = {
     id?: string;
     name: string;
     ownerId: string;
+    shareToken?: string | null;
     createdAt?: Date | string;
     updatedAt?: Date | string;
 };
@@ -246,6 +272,7 @@ export type CollectionUncheckedCreateWithoutBookmarksInput = {
     id?: string;
     name: string;
     ownerId: string;
+    shareToken?: string | null;
     createdAt?: Date | string;
     updatedAt?: Date | string;
 };
@@ -266,6 +293,7 @@ export type CollectionUpdateWithoutBookmarksInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     name?: Prisma.StringFieldUpdateOperationsInput | string;
     ownerId?: Prisma.StringFieldUpdateOperationsInput | string;
+    shareToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -273,6 +301,7 @@ export type CollectionUncheckedUpdateWithoutBookmarksInput = {
     id?: Prisma.StringFieldUpdateOperationsInput | string;
     name?: Prisma.StringFieldUpdateOperationsInput | string;
     ownerId?: Prisma.StringFieldUpdateOperationsInput | string;
+    shareToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null;
     createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string;
 };
@@ -292,6 +321,7 @@ export type CollectionSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
     id?: boolean;
     name?: boolean;
     ownerId?: boolean;
+    shareToken?: boolean;
     createdAt?: boolean;
     updatedAt?: boolean;
     bookmarks?: boolean | Prisma.Collection$bookmarksArgs<ExtArgs>;
@@ -301,6 +331,7 @@ export type CollectionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
     id?: boolean;
     name?: boolean;
     ownerId?: boolean;
+    shareToken?: boolean;
     createdAt?: boolean;
     updatedAt?: boolean;
 }, ExtArgs["result"]["collection"]>;
@@ -308,6 +339,7 @@ export type CollectionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
     id?: boolean;
     name?: boolean;
     ownerId?: boolean;
+    shareToken?: boolean;
     createdAt?: boolean;
     updatedAt?: boolean;
 }, ExtArgs["result"]["collection"]>;
@@ -315,10 +347,11 @@ export type CollectionSelectScalar = {
     id?: boolean;
     name?: boolean;
     ownerId?: boolean;
+    shareToken?: boolean;
     createdAt?: boolean;
     updatedAt?: boolean;
 };
-export type CollectionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "ownerId" | "createdAt" | "updatedAt", ExtArgs["result"]["collection"]>;
+export type CollectionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "ownerId" | "shareToken" | "createdAt" | "updatedAt", ExtArgs["result"]["collection"]>;
 export type CollectionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
     bookmarks?: boolean | Prisma.Collection$bookmarksArgs<ExtArgs>;
     _count?: boolean | Prisma.CollectionCountOutputTypeDefaultArgs<ExtArgs>;
@@ -334,6 +367,7 @@ export type $CollectionPayload<ExtArgs extends runtime.Types.Extensions.Internal
         id: string;
         name: string;
         ownerId: string;
+        shareToken: string | null;
         createdAt: Date;
         updatedAt: Date;
     }, ExtArgs["result"]["collection"]>;
@@ -397,6 +431,7 @@ export interface CollectionFieldRefs {
     readonly id: Prisma.FieldRef<"Collection", 'String'>;
     readonly name: Prisma.FieldRef<"Collection", 'String'>;
     readonly ownerId: Prisma.FieldRef<"Collection", 'String'>;
+    readonly shareToken: Prisma.FieldRef<"Collection", 'String'>;
     readonly createdAt: Prisma.FieldRef<"Collection", 'DateTime'>;
     readonly updatedAt: Prisma.FieldRef<"Collection", 'DateTime'>;
 }

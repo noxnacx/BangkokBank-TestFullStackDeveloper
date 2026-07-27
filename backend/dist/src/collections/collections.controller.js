@@ -44,6 +44,12 @@ let CollectionsController = class CollectionsController {
     async remove(id, req) {
         await this.collectionsService.remove(id, req.user.ownerId);
     }
+    createShareLink(id, req) {
+        return this.collectionsService.createShareLink(id, req.user.ownerId);
+    }
+    async revokeShareLink(id, req) {
+        await this.collectionsService.revokeShareLink(id, req.user.ownerId);
+    }
 };
 exports.CollectionsController = CollectionsController;
 __decorate([
@@ -104,6 +110,23 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], CollectionsController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Post)(':id/share'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], CollectionsController.prototype, "createShareLink", null);
+__decorate([
+    (0, common_1.Delete)(':id/share'),
+    (0, common_1.HttpCode)(204),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], CollectionsController.prototype, "revokeShareLink", null);
 exports.CollectionsController = CollectionsController = __decorate([
     (0, common_1.Controller)('collections'),
     __metadata("design:paramtypes", [collections_service_1.CollectionsService])

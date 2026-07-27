@@ -10,6 +10,7 @@ export declare class CollectionsService {
         id: string;
         name: string;
         ownerId: string;
+        shareToken: string | null;
         createdAt: Date;
         updatedAt: Date;
     }[]>;
@@ -17,6 +18,7 @@ export declare class CollectionsService {
         id: string;
         name: string;
         ownerId: string;
+        shareToken: string | null;
         createdAt: Date;
         updatedAt: Date;
     }>;
@@ -24,6 +26,7 @@ export declare class CollectionsService {
         id: string;
         name: string;
         ownerId: string;
+        shareToken: string | null;
         createdAt: Date;
         updatedAt: Date;
     }, never, import("@prisma/client/runtime/client").DefaultArgs, {
@@ -33,6 +36,7 @@ export declare class CollectionsService {
         id: string;
         name: string;
         ownerId: string;
+        shareToken: string | null;
         createdAt: Date;
         updatedAt: Date;
     }>;
@@ -47,5 +51,28 @@ export declare class CollectionsService {
         title: string;
         collectionId: string | null;
     }[]>;
+    createShareLink(id: string, ownerId: string): Promise<{
+        id: string;
+        name: string;
+        ownerId: string;
+        shareToken: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    revokeShareLink(id: string, ownerId: string): Promise<void>;
+    getSharedView(token: string): Promise<{
+        id: string;
+        name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        bookmarks: {
+            id: string;
+            url: string;
+            title: string;
+            notes: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+        }[];
+    }>;
     private rethrowAsNotFoundIfMissing;
 }

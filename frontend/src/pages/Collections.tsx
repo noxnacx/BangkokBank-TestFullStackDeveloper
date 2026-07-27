@@ -26,9 +26,11 @@ import { useAuth } from '../auth/AuthProvider'
 import { ApiError } from '../api/http'
 import {
   createCollection,
+  createShareLink,
   deleteCollection,
   getCollection,
   listCollections,
+  revokeShareLink,
   updateCollection,
   type Collection,
 } from '../api/collections'
@@ -51,6 +53,12 @@ export default function Collections() {
 
   const [toDelete, setToDelete] = useState<Collection | null>(null)
   const [deleting, setDeleting] = useState(false)
+
+  const [sharing, setSharing] = useState(false)
+  const [shareError, setShareError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [revokeConfirmOpen, setRevokeConfirmOpen] = useState(false)
+  const [revoking, setRevoking] = useState(false)
 
   // A 401 here means the token auth0-spa-js handed us was rejected by the
   // backend (expired between issue and use, revoked, etc.) -- the fix is
@@ -100,10 +108,52 @@ export default function Collections() {
   async function openDetail(id: string) {
     setDetailError(null)
     setIsEditing(false)
+    setShareError(null)
+    setCopied(false)
+    setRevokeConfirmOpen(false)
     try {
       setDetail(await getCollection(id))
     } catch (err) {
       handleApiError(err, setDetailError)
+    }
+  }
+
+  function shareLinkFor(shareToken: string) {
+    return `${window.location.origin}/shared/${shareToken}`
+  }
+
+  async function handleShare() {
+    if (!detail) return
+    setSharing(true)
+    setShareError(null)
+    try {
+      setDetail(await createShareLink(detail.id))
+    } catch (err) {
+      handleApiError(err, setShareError)
+    } finally {
+      setSharing(false)
+    }
+  }
+
+  async function copyShareLink() {
+    if (!detail?.shareToken) return
+    await navigator.clipboard.writeText(shareLinkFor(detail.shareToken))
+    setCopied(true)
+  }
+
+  async function confirmRevoke() {
+    if (!detail) return
+    setRevoking(true)
+    setShareError(null)
+    try {
+      await revokeShareLink(detail.id)
+      setDetail({ ...detail, shareToken: null })
+      setRevokeConfirmOpen(false)
+      setCopied(false)
+    } catch (err) {
+      handleApiError(err, setShareError)
+    } finally {
+      setRevoking(false)
     }
   }
 
@@ -246,6 +296,44 @@ export default function Collections() {
               <Typography>
                 <strong>Updated:</strong> {new Date(detail.updatedAt).toLocaleString()}
               </Typography>
+
+              {shareError && <Alert severity="error">{shareError}</Alert>}
+
+              {detail.shareToken ? (
+                <Stack spacing={1}>
+                  <Typography variant="body2" color="text.secondary">
+                    Anyone with this link can view this collection (read-only) —
+                    no login required.
+                  </Typography>
+                  <TextField
+                    value={shareLinkFor(detail.shareToken)}
+                    size="small"
+                    slotProps={{ input: { readOnly: true } }}
+                    fullWidth
+                  />
+                  <Stack direction="row" spacing={1}>
+                    <Button onClick={() => void copyShareLink()} size="small">
+                      {copied ? 'Copied!' : 'Copy link'}
+                    </Button>
+                    <Button
+                      onClick={() => setRevokeConfirmOpen(true)}
+                      size="small"
+                      color="error"
+                    >
+                      Revoke
+                    </Button>
+                  </Stack>
+                </Stack>
+              ) : (
+                <Button
+                  onClick={() => void handleShare()}
+                  disabled={sharing}
+                  variant="outlined"
+                  size="small"
+                >
+                  Share
+                </Button>
+              )}
             </Stack>
           ) : null}
         </DialogContent>
@@ -276,6 +364,24 @@ export default function Collections() {
               </Button>
             </>
           )}
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={revokeConfirmOpen} onClose={() => setRevokeConfirmOpen(false)}>
+        <DialogTitle>Revoke share link?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Anyone using the current link will lose access immediately. You can
+            create a new link later, but it will be a different URL.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRevokeConfirmOpen(false)} disabled={revoking}>
+            Cancel
+          </Button>
+          <Button onClick={() => void confirmRevoke()} color="error" disabled={revoking}>
+            Revoke
+          </Button>
         </DialogActions>
       </Dialog>
 

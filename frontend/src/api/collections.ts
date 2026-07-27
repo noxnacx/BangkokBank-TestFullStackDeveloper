@@ -5,6 +5,7 @@ export interface Collection {
   id: string
   name: string
   ownerId: string
+  shareToken: string | null
   createdAt: string
   updatedAt: string
 }
@@ -38,4 +39,16 @@ export function updateCollection(id: string, name: string): Promise<Collection> 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name }),
   }).then(parseJsonOrThrow)
+}
+
+export function createShareLink(id: string): Promise<Collection> {
+  return apiFetch(`/collections/${id}/share`, { method: 'POST' }).then(
+    parseJsonOrThrow,
+  )
+}
+
+export function revokeShareLink(id: string): Promise<void> {
+  return apiFetch(`/collections/${id}/share`, { method: 'DELETE' }).then(
+    parseJsonOrThrow,
+  )
 }
