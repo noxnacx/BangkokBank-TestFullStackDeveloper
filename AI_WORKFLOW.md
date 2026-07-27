@@ -7,6 +7,16 @@
 - **Playwright** — ใช้ผ่าน Claude Code สำหรับ live smoke test ทุก feature 
   ที่เกี่ยวกับ browser (auth flow, CRUD UI, sharing) แทนการเชื่อว่า 
   "build ผ่าน = ใช้งานได้"
+- **Custom slash command** `/verify-endpoint`
+  (`.agent/commands/verify-endpoint.md`) — สรุป pattern การ verify ที่ใช้ซ้ำ
+  ทุก endpoint ตลอดโปรเจกต์นี้ไว้เป็นคำสั่งเดียว (unit test + live smoke
+  test ผ่าน JWT เซ็นจริงบน DB จริง + เช็ค negative case ownership) เพื่อไม่ต้อง
+  อธิบาย pattern เดิมซ้ำทุกครั้งที่เพิ่ม endpoint ใหม่ สร้างขึ้นตอนงานหลัก
+  เสร็จไปแล้ว (retrospective) แต่สรุปจาก pattern ที่ใช้จริงตลอดทาง ไม่ใช่คิด
+  ขึ้นมาลอยๆ — ถ้ามี command นี้อยู่ตั้งแต่ตอน implement `/bookmarks` ครั้งแรก
+  การเช็ค cross-owner `collectionId` (ดู [DECISIONS.md](DECISIONS.md)) จะถูก
+  live-HTTP-verify ไปพร้อมกับ unit test ใน pass เดียวกันเลย แทนที่จะเป็นงาน
+  ที่ต้องนึกขึ้นได้แยกต่างหากทีหลัง — งานปริมาณเท่าเดิม แค่เรียงลำดับดีขึ้น
 
 ## Task Decomposition
 แบ่งงานเป็น phase ตามลำดับ dependency ไม่ prompt รวบยอด:
