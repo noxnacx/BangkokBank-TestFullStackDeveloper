@@ -43,3 +43,22 @@ export function createBookmark(input: CreateBookmarkInput): Promise<Bookmark> {
 export function deleteBookmark(id: string): Promise<void> {
   return apiFetch(`/bookmarks/${id}`, { method: 'DELETE' }).then(parseJsonOrThrow)
 }
+
+export interface UpdateBookmarkInput {
+  url: string
+  title: string
+  // Explicit `null` (not omitted) for both -- the edit form always submits
+  // every field, and the backend's PATCH treats an omitted key as "leave
+  // untouched" vs. `null` as "clear it". Since this form always has a
+  // definite value for every field, there's no "leave untouched" case here.
+  notes: string | null
+  collectionId: string | null
+}
+
+export function updateBookmark(id: string, input: UpdateBookmarkInput): Promise<Bookmark> {
+  return apiFetch(`/bookmarks/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  }).then(parseJsonOrThrow)
+}

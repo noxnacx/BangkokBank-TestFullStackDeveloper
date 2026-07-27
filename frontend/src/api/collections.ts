@@ -28,3 +28,14 @@ export function createCollection(name: string): Promise<Collection> {
 export function deleteCollection(id: string): Promise<void> {
   return apiFetch(`/collections/${id}`, { method: 'DELETE' }).then(parseJsonOrThrow)
 }
+
+// PUT, not PATCH: Collection has exactly one user-settable field, and the
+// edit form always submits a full value for it -- there's no "some fields
+// omitted" case a PATCH would exist to handle.
+export function updateCollection(id: string, name: string): Promise<Collection> {
+  return apiFetch(`/collections/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  }).then(parseJsonOrThrow)
+}

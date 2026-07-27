@@ -29,6 +29,7 @@ import {
   deleteCollection,
   getCollection,
   listCollections,
+  updateCollection,
   type Collection,
 } from '../api/collections'
 
@@ -42,6 +43,11 @@ export default function Collections() {
 
   const [detail, setDetail] = useState<Collection | null>(null)
   const [detailError, setDetailError] = useState<string | null>(null)
+
+  const [isEditing, setIsEditing] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const [toDelete, setToDelete] = useState<Collection | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -93,10 +99,36 @@ export default function Collections() {
 
   async function openDetail(id: string) {
     setDetailError(null)
+    setIsEditing(false)
     try {
       setDetail(await getCollection(id))
     } catch (err) {
       handleApiError(err, setDetailError)
+    }
+  }
+
+  function startEdit() {
+    if (!detail) return
+    setEditName(detail.name)
+    setSaveError(null)
+    setIsEditing(true)
+  }
+
+  async function saveEdit() {
+    if (!detail) return
+    const name = editName.trim()
+    if (!name) return
+    setSaving(true)
+    setSaveError(null)
+    try {
+      const updated = await updateCollection(detail.id, name)
+      setDetail(updated)
+      setIsEditing(false)
+      await refresh()
+    } catch (err) {
+      handleApiError(err, setSaveError)
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -182,12 +214,24 @@ export default function Collections() {
         onClose={() => {
           setDetail(null)
           setDetailError(null)
+          setIsEditing(false)
         }}
       >
-        <DialogTitle>Collection details</DialogTitle>
+        <DialogTitle>{isEditing ? 'Edit collection' : 'Collection details'}</DialogTitle>
         <DialogContent>
           {detailError ? (
             <Alert severity="error">{detailError}</Alert>
+          ) : detail && isEditing ? (
+            <Stack spacing={2} sx={{ pt: 1, minWidth: 320 }}>
+              {saveError && <Alert severity="error">{saveError}</Alert>}
+              <TextField
+                label="Name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                disabled={saving}
+                autoFocus
+              />
+            </Stack>
           ) : detail ? (
             <Stack spacing={1} sx={{ pt: 1 }}>
               <Typography>
@@ -206,14 +250,32 @@ export default function Collections() {
           ) : null}
         </DialogContent>
         <DialogActions>
-          <Button
-            onClick={() => {
-              setDetail(null)
-              setDetailError(null)
-            }}
-          >
-            Close
-          </Button>
+          {detail && isEditing ? (
+            <>
+              <Button onClick={() => setIsEditing(false)} disabled={saving}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => void saveEdit()}
+                variant="contained"
+                disabled={saving || !editName.trim()}
+              >
+                Save
+              </Button>
+            </>
+          ) : (
+            <>
+              {detail && <Button onClick={startEdit}>Edit</Button>}
+              <Button
+                onClick={() => {
+                  setDetail(null)
+                  setDetailError(null)
+                }}
+              >
+                Close
+              </Button>
+            </>
+          )}
         </DialogActions>
       </Dialog>
 

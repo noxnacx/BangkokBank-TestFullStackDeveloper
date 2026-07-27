@@ -34,6 +34,7 @@ import {
   deleteBookmark,
   getBookmark,
   listBookmarks,
+  updateBookmark,
   type Bookmark,
 } from '../api/bookmarks'
 
@@ -55,6 +56,14 @@ export default function Bookmarks() {
 
   const [detail, setDetail] = useState<Bookmark | null>(null)
   const [detailError, setDetailError] = useState<string | null>(null)
+
+  const [isEditing, setIsEditing] = useState(false)
+  const [editUrl, setEditUrl] = useState('')
+  const [editTitle, setEditTitle] = useState('')
+  const [editNotes, setEditNotes] = useState('')
+  const [editCollectionId, setEditCollectionId] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const [toDelete, setToDelete] = useState<Bookmark | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -127,10 +136,45 @@ export default function Bookmarks() {
 
   async function openDetail(id: string) {
     setDetailError(null)
+    setIsEditing(false)
     try {
       setDetail(await getBookmark(id))
     } catch (err) {
       handleApiError(err, setDetailError)
+    }
+  }
+
+  function startEdit() {
+    if (!detail) return
+    setEditUrl(detail.url)
+    setEditTitle(detail.title)
+    setEditNotes(detail.notes ?? '')
+    setEditCollectionId(detail.collectionId ?? '')
+    setSaveError(null)
+    setIsEditing(true)
+  }
+
+  async function saveEdit() {
+    if (!detail) return
+    const url = editUrl.trim()
+    const title = editTitle.trim()
+    if (!url || !title) return
+    setSaving(true)
+    setSaveError(null)
+    try {
+      const updated = await updateBookmark(detail.id, {
+        url,
+        title,
+        notes: editNotes.trim() || null,
+        collectionId: editCollectionId || null,
+      })
+      setDetail(updated)
+      setIsEditing(false)
+      await refresh()
+    } catch (err) {
+      handleApiError(err, setSaveError)
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -280,12 +324,53 @@ export default function Bookmarks() {
         onClose={() => {
           setDetail(null)
           setDetailError(null)
+          setIsEditing(false)
         }}
       >
-        <DialogTitle>Bookmark details</DialogTitle>
+        <DialogTitle>{isEditing ? 'Edit bookmark' : 'Bookmark details'}</DialogTitle>
         <DialogContent>
           {detailError ? (
             <Alert severity="error">{detailError}</Alert>
+          ) : detail && isEditing ? (
+            <Stack spacing={2} sx={{ pt: 1, minWidth: 320 }}>
+              {saveError && <Alert severity="error">{saveError}</Alert>}
+              <TextField
+                label="URL"
+                value={editUrl}
+                onChange={(e) => setEditUrl(e.target.value)}
+                disabled={saving}
+                autoFocus
+              />
+              <TextField
+                label="Title"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                disabled={saving}
+              />
+              <TextField
+                label="Notes"
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                disabled={saving}
+              />
+              <FormControl>
+                <InputLabel id="edit-collection-label">Collection</InputLabel>
+                <Select
+                  labelId="edit-collection-label"
+                  label="Collection"
+                  value={editCollectionId}
+                  onChange={(e) => setEditCollectionId(e.target.value)}
+                  disabled={saving}
+                >
+                  <MenuItem value="">None</MenuItem>
+                  {collections.map((c) => (
+                    <MenuItem key={c.id} value={c.id}>
+                      {c.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
           ) : detail ? (
             <Stack spacing={1} sx={{ pt: 1 }}>
               <Typography>
@@ -313,14 +398,32 @@ export default function Bookmarks() {
           ) : null}
         </DialogContent>
         <DialogActions>
-          <Button
-            onClick={() => {
-              setDetail(null)
-              setDetailError(null)
-            }}
-          >
-            Close
-          </Button>
+          {detail && isEditing ? (
+            <>
+              <Button onClick={() => setIsEditing(false)} disabled={saving}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => void saveEdit()}
+                variant="contained"
+                disabled={saving || !editUrl.trim() || !editTitle.trim()}
+              >
+                Save
+              </Button>
+            </>
+          ) : (
+            <>
+              {detail && <Button onClick={startEdit}>Edit</Button>}
+              <Button
+                onClick={() => {
+                  setDetail(null)
+                  setDetailError(null)
+                }}
+              >
+                Close
+              </Button>
+            </>
+          )}
         </DialogActions>
       </Dialog>
 
