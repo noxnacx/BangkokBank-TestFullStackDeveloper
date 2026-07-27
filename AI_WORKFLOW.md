@@ -4,9 +4,17 @@
   **แก้แล้ว [2026-07-27]**: login จริงด้วย `candidate@test.com` ผ่าน frontend
   PKCE flow (Playwright ขับ Universal Login ให้), decode access token จริงที่ได้
   → `sub = "auth0|62e089faea483987422db6cc"` แทนค่าใน `backend/prisma/seed.ts`
-  `OWNER_A` แล้ว ยังไม่ได้รัน `npm run prisma:seed` ซ้ำด้วยค่าใหม่นี้ — รันก่อนใช้
-  seed data ทดสอบ ownership isolation จริงจัง (ค่าเดิม placeholder ที่ seed ไว้
-  ก่อนหน้ายังอยู่ใน DB จนกว่าจะ re-seed)
+  `OWNER_A` แล้ว รัน `npm run prisma:seed` ซ้ำสำเร็จ ยืนยันด้วย query ตรงว่า
+  User A มี 2 collections/5 bookmarks ผูกกับ sub จริงถูกต้อง, live smoke test
+  ของ Collections+Bookmarks รันซ้ำผ่านหมด ไม่มี regression
+
+  **บทเรียนที่เจอระหว่างทาง:** seed script ลบข้อมูลเก่าแบบ scoped ด้วยค่า
+  `OWNER_A`/`OWNER_B` **ปัจจุบัน** เท่านั้น — พอเปลี่ยนค่า placeholder เป็น sub
+  จริง ข้อมูลเก่าที่ seed ไว้ใต้ placeholder ตัวเก่ากลายเป็นขยะตกค้างในตาราง
+  ทันที เพราะ script ไม่รู้จักค่าเก่าอีกต่อไป (deleteMany เทียบกับ constant
+  ใหม่ ไม่เจอ match) ต้อง manual cleanup แยกอีกที — ครั้งต่อไปถ้าจะเปลี่ยนค่า
+  seed ownerId อีก ให้เช็ค orphaned rows ใต้ค่าเก่าด้วยเสมอ ไม่ใช่แค่เชื่อว่า
+  รัน seed ซ้ำแล้วจบ
 
 - ~~[2026-07-27] แทนที่ placeholder VITE_AUTH0_CLIENT_ID ด้วยของจริง~~ —
   **แก้แล้ว [2026-07-27]**: client_id จริง (`H9F6QG5SzTKMv0tbmgxLj9LjG1EKVllA`)
