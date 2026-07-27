@@ -1,13 +1,19 @@
 ## TODO / Pending
 
-- **[2026-07-27] แทนที่ placeholder ownerId ด้วย sub จริง**: `backend/prisma/seed.ts`
-  ใช้ `OWNER_A = "auth0|PLACEHOLDER-CANDIDATE-REPLACE-ME"` แทน sub จริงของ
-  `candidate@test.com` เพราะตอนเขียนยังไม่มีสิทธิ์เข้า Auth0 Dashboard และยังไม่มี
-  frontend auth flow ให้ login จริงเพื่อ decode token ได้
-  **ต้องแก้ก่อนใช้ seed data นี้ทดสอบ ownership isolation จริงจัง** — ไม่งั้น
-  test จะทดสอบกับ user ปลอมที่ login จริงไม่ได้ วิธีแก้: login ด้วย
-  `candidate@test.com` ผ่าน frontend auth flow เมื่อพร้อมแล้ว, decode `sub`
-  claim จาก access token ที่ได้, แล้วแทนค่าใน `OWNER_A`
+- ~~[2026-07-27] แทนที่ placeholder ownerId ด้วย sub จริง~~ —
+  **แก้แล้ว [2026-07-27]**: login จริงด้วย `candidate@test.com` ผ่าน frontend
+  PKCE flow (Playwright ขับ Universal Login ให้), decode access token จริงที่ได้
+  → `sub = "auth0|62e089faea483987422db6cc"` แทนค่าใน `backend/prisma/seed.ts`
+  `OWNER_A` แล้ว ยังไม่ได้รัน `npm run prisma:seed` ซ้ำด้วยค่าใหม่นี้ — รันก่อนใช้
+  seed data ทดสอบ ownership isolation จริงจัง (ค่าเดิม placeholder ที่ seed ไว้
+  ก่อนหน้ายังอยู่ใน DB จนกว่าจะ re-seed)
+
+- ~~[2026-07-27] แทนที่ placeholder VITE_AUTH0_CLIENT_ID ด้วยของจริง~~ —
+  **แก้แล้ว [2026-07-27]**: client_id จริง (`H9F6QG5SzTKMv0tbmgxLj9LjG1EKVllA`)
+  มีอยู่แล้วในสเปกต้นฉบับ ไม่ต้องสร้าง Application ใหม่ ใส่ใน
+  `frontend/.env` แล้ว ยืนยันด้วย Playwright ว่า login ผ่าน Universal Login
+  จริงด้วย `candidate@test.com`, แลก code เป็น access token จริงสำเร็จ
+  (ไม่ใช่แค่ redirect URL ถูกต้องเหมือนรอบก่อน)
 
 ## Prompt ที่ได้ผลดี
 

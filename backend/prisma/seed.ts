@@ -1,21 +1,11 @@
-// ⚠️ PLACEHOLDER ownerId — NOT a real Auth0 sub claim ⚠️
-//
-// OWNER_A below is a made-up string, not the real `sub` for candidate@test.com.
-// We don't have Auth0 Dashboard access or a working frontend login flow yet,
-// so there's no way to obtain the real sub claim right now.
-//
-// MUST FIX before relying on this seed data for real ownership testing:
-// once the frontend auth flow works, log in as candidate@test.com, decode
-// the access token's `sub` claim, and replace OWNER_A below with the real
-// value. Until then, any "ownership isolation" test run against this seed
-// data is only testing against a fake user that can never actually log in.
-// Tracked in DECISIONS.md.
-
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/prisma/client';
 
-const OWNER_A = 'auth0|PLACEHOLDER-CANDIDATE-REPLACE-ME';
+// Real Auth0 `sub` for candidate@test.com, confirmed by logging in through
+// the actual frontend PKCE flow and decoding the access token it returned
+// (see AI_WORKFLOW.md) — no longer a placeholder.
+const OWNER_A = 'auth0|62e089faea483987422db6cc';
 const OWNER_B = 'auth0|PLACEHOLDER-USERB-REPLACE-ME';
 
 const prisma = new PrismaClient({
