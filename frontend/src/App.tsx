@@ -5,6 +5,7 @@ import Home from './pages/Home'
 import About from './pages/About'
 import Callback from './pages/Callback'
 import Collections from './pages/Collections'
+import Bookmarks from './pages/Bookmarks'
 import LoginButton from './auth/LoginButton'
 import LogoutButton from './auth/LogoutButton'
 import RequireAuth from './auth/RequireAuth'
@@ -26,6 +27,9 @@ function App() {
           <Button color="inherit" component={Link} to="/collections">
             Collections
           </Button>
+          <Button color="inherit" component={Link} to="/bookmarks">
+            Bookmarks
+          </Button>
           <Box sx={{ flexGrow: 1 }} />
           {isAuthenticated ? <LogoutButton /> : <LoginButton />}
         </Toolbar>
@@ -41,6 +45,14 @@ function App() {
               element={
                 <RequireAuth>
                   <Collections />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/bookmarks"
+              element={
+                <RequireAuth>
+                  <Bookmarks />
                 </RequireAuth>
               }
             />

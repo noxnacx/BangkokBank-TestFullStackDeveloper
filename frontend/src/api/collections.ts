@@ -1,4 +1,5 @@
 import { apiFetch } from './client'
+import { parseJsonOrThrow } from './http'
 
 export interface Collection {
   id: string
@@ -6,26 +7,6 @@ export interface Collection {
   ownerId: string
   createdAt: string
   updatedAt: string
-}
-
-export class ApiError extends Error {
-  status: number
-  constructor(status: number, message: string) {
-    super(message)
-    this.status = status
-  }
-}
-
-async function parseJsonOrThrow(res: Response) {
-  if (!res.ok) {
-    const body: unknown = await res.json().catch(() => null)
-    const message =
-      body && typeof body === 'object' && 'message' in body
-        ? String((body as { message: unknown }).message)
-        : res.statusText
-    throw new ApiError(res.status, message)
-  }
-  return res.status === 204 ? undefined : res.json()
 }
 
 export function listCollections(): Promise<Collection[]> {

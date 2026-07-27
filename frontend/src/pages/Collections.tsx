@@ -23,8 +23,8 @@ import {
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { useAuth } from '../auth/AuthProvider'
+import { ApiError } from '../api/http'
 import {
-  ApiError,
   createCollection,
   deleteCollection,
   getCollection,
