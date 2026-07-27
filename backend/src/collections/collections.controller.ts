@@ -64,4 +64,15 @@ export class CollectionsController {
   async remove(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     await this.collectionsService.remove(id, req.user.ownerId);
   }
+
+  @Post(':id/share')
+  createShareLink(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    return this.collectionsService.createShareLink(id, req.user.ownerId);
+  }
+
+  @Delete(':id/share')
+  @HttpCode(204)
+  async revokeShareLink(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    await this.collectionsService.revokeShareLink(id, req.user.ownerId);
+  }
 }

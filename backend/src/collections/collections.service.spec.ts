@@ -193,4 +193,114 @@ describe('CollectionsService', () => {
       expect(prisma.bookmark.findMany).not.toHaveBeenCalled();
     });
   });
+
+  describe('createShareLink', () => {
+    it('generates a high-entropy token and stores it scoped to the owner', async () => {
+      prisma.collection.update.mockImplementationOnce(({ data }) =>
+        Promise.resolve({ id: '1', ownerId: OWNER, ...data }),
+      );
+
+      const result = await service.createShareLink('1', OWNER);
+
+      expect(prisma.collection.update).toHaveBeenCalledWith({
+        where: { id: '1', ownerId: OWNER },
+        data: { shareToken: expect.any(String) },
+      });
+      // 32 random bytes as base64url -- no padding, URL-safe alphabet only.
+      expect(result.shareToken).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    });
+
+    it('throws NotFoundException when the collection belongs to a different owner', async () => {
+      prisma.collection.update.mockRejectedValueOnce(prismaKnownError('P2025'));
+
+      await expect(service.createShareLink('1', OTHER_OWNER)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('revokeShareLink', () => {
+    it('clears shareToken when the scoped where matches', async () => {
+      prisma.collection.update.mockResolvedValueOnce({ id: '1', shareToken: null });
+
+      await service.revokeShareLink('1', OWNER);
+
+      expect(prisma.collection.update).toHaveBeenCalledWith({
+        where: { id: '1', ownerId: OWNER },
+        data: { shareToken: null },
+      });
+    });
+
+    it('throws NotFoundException when the collection belongs to a different owner', async () => {
+      prisma.collection.update.mockRejectedValueOnce(prismaKnownError('P2025'));
+
+      await expect(service.revokeShareLink('1', OTHER_OWNER)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('getSharedView', () => {
+    it('returns the collection and its bookmarks scoped by collectionId, without ownerId or shareToken', async () => {
+      prisma.collection.findUnique.mockResolvedValueOnce({
+        id: '1',
+        name: 'Reading list',
+        ownerId: OWNER,
+        shareToken: 'the-token',
+        createdAt: new Date('2026-01-01'),
+        updatedAt: new Date('2026-01-02'),
+      });
+      prisma.bookmark.findMany.mockResolvedValueOnce([
+        {
+          id: 'b1',
+          url: 'https://example.com',
+          title: 'Example',
+          notes: null,
+          ownerId: OWNER,
+          collectionId: '1',
+          createdAt: new Date('2026-01-01'),
+          updatedAt: new Date('2026-01-01'),
+        },
+      ]);
+
+      const result = await service.getSharedView('the-token');
+
+      expect(prisma.collection.findUnique).toHaveBeenCalledWith({
+        where: { shareToken: 'the-token' },
+      });
+      expect(prisma.bookmark.findMany).toHaveBeenCalledWith({
+        where: { collectionId: '1' },
+        orderBy: { createdAt: 'desc' },
+      });
+      expect(result).toEqual({
+        id: '1',
+        name: 'Reading list',
+        createdAt: new Date('2026-01-01'),
+        updatedAt: new Date('2026-01-02'),
+        bookmarks: [
+          {
+            id: 'b1',
+            url: 'https://example.com',
+            title: 'Example',
+            notes: null,
+            createdAt: new Date('2026-01-01'),
+            updatedAt: new Date('2026-01-01'),
+          },
+        ],
+      });
+      expect(result).not.toHaveProperty('ownerId');
+      expect(result).not.toHaveProperty('shareToken');
+      expect(result.bookmarks[0]).not.toHaveProperty('ownerId');
+      expect(result.bookmarks[0]).not.toHaveProperty('collectionId');
+    });
+
+    it('throws NotFoundException for an unknown or revoked token', async () => {
+      prisma.collection.findUnique.mockResolvedValueOnce(null);
+
+      await expect(service.getSharedView('bad-token')).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(prisma.bookmark.findMany).not.toHaveBeenCalled();
+    });
+  });
 });

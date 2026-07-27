@@ -167,3 +167,72 @@ user นี้ ตรงกับความหมายมาตรฐาน�
   ไม่ถูกสร้าง/ไม่ถูกย้าย), user B มองไม่เห็น/แก้ไม่ได้/ลบไม่ได้ bookmark ของ user A เลย
   (`404` ทุกท่า, ไม่โผล่ใน list ของ B), และ `PUT` เคลียร์ `collectionId` เป็น `null` จริง
   ตามที่ออกแบบไว้
+
+## Collection sharing (read-only share link)
+
+ตอบโจทย์ requirement กำกวมข้อ 3.3 ("user อาจอยากแชร์ collection") ด้วย **read-only share
+link แบบ token** ไม่ใช่ full multi-owner model (ไม่มี concept "สมาชิก collection" หลายคน
+เข้าถึงได้พร้อม permission ต่างกัน — แค่ลิงก์เดียวที่ใครถือก็ดูได้แบบ read-only)
+
+### Schema
+
+`Collection.shareToken: String? @unique` — `null` = ยังไม่แชร์ ค่าเป็น string สุ่ม 256-bit
+(`crypto.randomBytes(32).toString('base64url')`) เมื่อสร้าง share link ไม่ derive จาก
+`id`/`ownerId` เลย จึงเดาไม่ได้แม้รู้ `id` ของ collection นั้น
+
+### Endpoints
+
+| Method | Path | Description | Auth |
+|---|---|---|---|
+| POST | /collections/:id/share | สร้าง/regenerate share token ให้ collection นี้ | Required (owner เท่านั้น) |
+| DELETE | /collections/:id/share | Revoke — เซ็ต `shareToken` กลับเป็น `null` | Required (owner เท่านั้น) |
+| GET | /shared/:token | Public read-only view ของ collection + bookmarks ข้างใน | **ไม่ต้อง auth** |
+
+`POST`/`DELETE` ใช้ ownership pattern เดียวกับทุก endpoint อื่นในระบบทุกประการ
+(`where: { id, ownerId }`, `P2025` → `404` ไม่ใช่ `403`) — user ที่ไม่ใช่เจ้าของ
+พยายาม generate/revoke share link ของ collection คนอื่น ได้ `404` เหมือนพยายามเข้าถึง
+collection นั้นตรงๆ
+
+### `/shared/:token` — public แต่ scope แน่นและ read-only โดยโครงสร้าง ไม่ใช่แค่ convention
+
+**ไม่ต้อง auth ได้อย่างไรทั้งที่ `AuthGuard` ผูก global ผ่าน `APP_GUARD`:** เพิ่ม
+`@Public()` decorator (`SetMetadata`) + เช็คใน `AuthGuard` ผ่าน `Reflector` ก่อนเข้า logic
+verify JWT — เฉพาะ route ที่ติด decorator นี้เท่านั้นที่ข้าม auth ได้ ทุก endpoint อื่น
+ยังต้องมี Bearer token เหมือนเดิม
+
+**Scope แน่นอย่างไร:** `getSharedView(token)` หา collection ด้วย
+`findUnique({ where: { shareToken: token } })` — ไม่ query ผ่าน `ownerId` เลยแม้แต่ครั้ง
+เดียว แล้ว query bookmarks ด้วย `findMany({ where: { collectionId: collection.id } })`
+scope เฉพาะ collection ที่ token นั้นชี้ถึงจริงๆ เท่านั้น ไม่มีทางเห็น collection อื่น
+ของเจ้าของคนเดียวกันได้เลยไม่ว่ากรณีใด — พิสูจน์ด้วย live test จริงที่สร้าง 2
+collections ให้ user เดียวกัน แชร์แค่อันเดียว แล้วเช็คว่า response ไม่มีคำว่า
+"secret" (ชื่อ/เนื้อหาของอีก collection) หลุดออกมาเลย
+
+**Read-only โดยโครงสร้าง ไม่ใช่แค่ "ไม่เขียน endpoint ไว้":** `SharedController` มีแค่
+method เดียวคือ `getShared` (`@Get`) ไม่มี `@Put`/`@Patch`/`@Delete`/`@Post` ประกาศไว้เลย
+แปลว่าไม่มี route ให้ mutate ผ่านทางนี้จริงๆ ระดับ routing ไม่ใช่แค่ business logic ที่
+บังเอิญไม่ implement ไว้ — ยืนยันด้วย unit test ที่เช็ค prototype methods ของ
+controller ตรงๆ ว่ามีแค่ `getShared` เท่านั้น และ live test ที่ยิง `PUT`/`PATCH`/
+`DELETE`/`POST` ไปที่ `/shared/:token` แล้วเจอ `404` ทุกตัว (route ไม่มีอยู่)
+
+**field ที่ไม่โชว์ต่อสาธารณะ:** response ไม่มี `ownerId` และไม่มี `shareToken` ตัวเอง
+เลือก field ที่จะคืนแบบ explicit ทีละตัว (ไม่ spread ทั้ง object จาก Prisma ตรงๆ)
+กันไม่ให้ field ใหม่ที่เพิ่มเข้า schema ในอนาคตหลุดออกไปโดยไม่ตั้งใจ
+
+### Revoke แล้วอะไรเกิดขึ้น
+
+`shareToken` กลับเป็น `null` — collection และ bookmarks ข้างในไม่ถูกแตะต้องเลย มีแค่
+ลิงก์เก่าใช้ไม่ได้อีก (`/shared/:oldToken` → `404` ทันที) เจ้าของสร้าง share link ใหม่
+ได้ตลอดเวลา (token จะเปลี่ยนทุกครั้งที่ generate ใหม่ ไม่ reuse ของเดิม)
+
+### ยืนยันด้วย automated + live smoke test
+
+- Unit test ครอบ: generate token (byte length/format ถูกต้อง), revoke เคลียร์เป็น
+  `null`, `getSharedView` คืนเฉพาะ field ที่ควรเห็น (ไม่มี `ownerId`/`shareToken`
+  หลุดออกมา), 404 สำหรับ token ที่ไม่รู้จัก, `SharedController` มีแค่ method เดียว
+- Live smoke test ผ่าน HTTP จริงด้วย JWT เซ็นจริงบน DB จริง: user B generate/revoke
+  share link ของ collection user A ไม่ได้ (`404`); token ที่ไม่เคยออกให้ → `404`; เข้าดู
+  ผ่าน token จริงแบบไม่มี Authorization header เลย → `200` เห็นแค่ bookmarks ใน
+  collection นั้น (ไม่เห็นของ collection อื่นที่ user เดียวกันมีอยู่); ยิง
+  `PUT`/`PATCH`/`DELETE`/`POST` ไปที่ `/shared/:token` → `404` ทุกตัว ข้อมูลจริงไม่ถูก
+  แตะเลย; revoke แล้ว token เดิมตายทันที ส่วน collection เดิมยังอยู่ปกติ

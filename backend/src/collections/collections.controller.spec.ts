@@ -18,6 +18,8 @@ describe('CollectionsController', () => {
     create: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
+    createShareLink: jest.fn(),
+    revokeShareLink: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -74,5 +76,15 @@ describe('CollectionsController', () => {
   it('remove passes id and req.user.ownerId through', async () => {
     await controller.remove('1', reqWithOwner(OWNER));
     expect(service.remove).toHaveBeenCalledWith('1', OWNER);
+  });
+
+  it('createShareLink passes id and req.user.ownerId through', () => {
+    controller.createShareLink('1', reqWithOwner(OWNER));
+    expect(service.createShareLink).toHaveBeenCalledWith('1', OWNER);
+  });
+
+  it('revokeShareLink passes id and req.user.ownerId through', async () => {
+    await controller.revokeShareLink('1', reqWithOwner(OWNER));
+    expect(service.revokeShareLink).toHaveBeenCalledWith('1', OWNER);
   });
 });

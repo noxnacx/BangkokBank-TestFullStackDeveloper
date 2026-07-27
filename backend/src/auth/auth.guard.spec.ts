@@ -8,6 +8,7 @@ jest.mock('jose', () => ({
 
 import { UnauthorizedException } from '@nestjs/common';
 import type { ExecutionContext } from '@nestjs/common';
+import type { Reflector } from '@nestjs/core';
 import { jwtVerify } from 'jose';
 import { AuthGuard } from './auth.guard';
 
@@ -19,11 +20,17 @@ function contextWithRequest(request: {
 }): ExecutionContext {
   return {
     switchToHttp: () => ({ getRequest: () => request }),
+    getHandler: () => undefined,
+    getClass: () => undefined,
   } as unknown as ExecutionContext;
 }
 
 describe('AuthGuard', () => {
-  const guard = new AuthGuard();
+  // Reflector.getAllAndOverride returns undefined when no `@Public()`
+  // metadata is present -- exactly what a real Reflector does for every
+  // route in these tests, none of which are marked public.
+  const reflector = { getAllAndOverride: () => undefined } as unknown as Reflector;
+  const guard = new AuthGuard(reflector);
 
   afterEach(() => jest.clearAllMocks());
 
@@ -54,5 +61,14 @@ describe('AuthGuard', () => {
 
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
     expect(request).toHaveProperty('user', { ownerId: 'auth0|abc123' });
+  });
+
+  it('lets a @Public() route through with no token and never touches jwtVerify', async () => {
+    const publicReflector = { getAllAndOverride: () => true } as unknown as Reflector;
+    const publicGuard = new AuthGuard(publicReflector);
+    const ctx = contextWithRequest({ headers: {} });
+
+    await expect(publicGuard.canActivate(ctx)).resolves.toBe(true);
+    expect(verifyMock).not.toHaveBeenCalled();
   });
 });

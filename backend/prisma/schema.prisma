@@ -19,12 +19,16 @@ datasource db {
 // chat response for the full reasoning and the trigger for revisiting this.
 
 model Collection {
-  id        String     @id @default(cuid())
-  name      String
-  ownerId   String
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  bookmarks Bookmark[]
+  id          String     @id @default(cuid())
+  name        String
+  ownerId     String
+  // Null = not shared. A 256-bit random token (see CollectionsService),
+  // never derived from id/ownerId, so it can't be guessed even by someone
+  // who knows the collection's id.
+  shareToken  String?    @unique
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  bookmarks   Bookmark[]
 
   @@index([ownerId])
 }
