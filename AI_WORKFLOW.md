@@ -1,3 +1,46 @@
+# AI Workflow
+
+## Tools & Models
+- **Claude Code** (คำสั่งหลักตลอดโปรเจกต์) — ใช้ orchestrate ทั้ง backend 
+  (NestJS/Prisma) และ frontend (React/Vite) รวมถึงรัน test/verify ผ่าน 
+  terminal โดยตรง
+- **Playwright** — ใช้ผ่าน Claude Code สำหรับ live smoke test ทุก feature 
+  ที่เกี่ยวกับ browser (auth flow, CRUD UI, sharing) แทนการเชื่อว่า 
+  "build ผ่าน = ใช้งานได้"
+
+## Task Decomposition
+แบ่งงานเป็น phase ตามลำดับ dependency ไม่ prompt รวบยอด:
+1. Scaffold (backend/frontend แยกกัน)
+2. Verify Auth0 tenant ก่อนออกแบบ auth (ไม่เดา)
+3. Auth guard + e2e test คู่กัน
+4. Prisma schema + seed
+5. CRUD ทีละ resource (Collections ก่อน เพราะ Bookmarks อ้างอิงถึง) 
+   พร้อม test คู่กันทุกครั้ง ไม่แยกทำ test ทีหลัง
+6. Frontend auth flow → หน้า CRUD ทีละหน้า (reuse pattern จากหน้าแรก)
+7. Feature เสริม (Edit, Share) หลัง core ทั้งหมดเสถียรแล้วเท่านั้น
+
+หลักการที่ยึดตลอด: ทุก prompt ระบุ scope ชัดว่า "ยังไม่ต้องทำอะไร" 
+กัน agent ทำเกินขอบเขตที่ตรวจสอบไม่ทัน
+
+## 2-3 สิ่งที่ AI ทำได้ดี
+1. **จับ security edge case ที่ไม่ได้สั่งตรงๆ** — ตอนเขียน AuthGuard 
+   เจอเองว่า tenant เปิด HS256 ไว้ด้วย (จากบริบทใน DECISIONS.md) 
+   แล้วป้องกัน algorithm confusion attack โดยไม่ต้องบอก
+2. **ไล่ root cause จริงแทนที่จะเลี่ยงปัญหา** — ปัญหา Prisma+Jest ตอนแรก
+   ดูเหมือนเป็นเรื่อง Prisma generator แต่ไล่จนเจอว่าจริงๆ อยู่ที่ 
+   tsconfig module setting แล้วแก้ที่ต้นเหตุจริง ไม่ใช่ patch หลบ
+3. **Verify แบบ adversarial ไม่ใช่แค่ happy path** — ทุก feature (CRUD, 
+   auth, sharing) มี live smoke test ที่ลองโจมตี/ทดสอบ negative case 
+   จริงผ่าน HTTP ด้วย JWT เซ็นจริง ไม่ใช่แค่ mock
+
+## Cost/Token Awareness
+ใช้ prompt ที่ scope แคบในแต่ละครั้ง (ทีละ module/feature) แทนการ 
+prompt รวบยอดทั้งระบบ ช่วยให้:
+- แก้ไขเฉพาะจุดได้เร็วเมื่อผลลัพธ์ไม่ตรง ไม่ต้อง re-generate โค้ดทั้งก้อน
+- ตรวจสอบ output ได้ละเอียดขึ้นต่อรอบ (ทานได้จริง ไม่ใช่กวาดตาดูผ่านๆ)
+- Trade-off: ใช้จำนวน prompt มากกว่าการสั่งรวบยอด แต่ output แต่ละรอบ
+  คุณภาพสูงกว่าและ debug ง่ายกว่ามาก
+
 ## TODO / Pending
 
 - ~~[2026-07-27] แทนที่ placeholder ownerId ด้วย sub จริง~~ —
