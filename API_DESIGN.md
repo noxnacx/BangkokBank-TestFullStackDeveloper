@@ -1,3 +1,56 @@
+## Data Model
+
+```mermaid
+erDiagram
+    COLLECTION ||--o{ BOOKMARK : contains
+
+    COLLECTION {
+        string id PK
+        string name
+        string ownerId
+        string shareToken "nullable, unique"
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    BOOKMARK {
+        string id PK
+        string url
+        string title
+        string notes "nullable"
+        string collectionId FK "nullable"
+        string ownerId
+        datetime createdAt
+        datetime updatedAt
+    }
+```
+
+Collection ↔ Bookmark: one collection contains zero or more bookmarks — `collectionId` is nullable (a bookmark can be uncategorized) and `shareToken` is nullable+unique (`null` = not currently shared).
+
+## Authentication
+
+ทุก endpoint (ยกเว้น `/shared/:token`) ต้องมี Bearer access token ที่ผ่านการ verify โดย `AuthGuard` เต็มรูปแบบก่อนถึง controller เสมอ — เหตุผลที่เลือก access token แทน ID token อยู่ใน [DECISIONS.md](DECISIONS.md)
+
+```mermaid
+sequenceDiagram
+    actor Browser as User's Browser (Frontend :3000)
+    participant Auth0 as Auth0 (dev-yg.us.auth0.com)
+    participant Backend as Backend API (:3001)
+
+    Browser->>Auth0: click "Log in" → redirect to /authorize<br/>+ code_challenge (S256) + audience
+    Note over Auth0: Universal Login — candidate@test.com
+    Auth0->>Browser: redirect to :3000/callback?code=...
+    Browser->>Auth0: POST /oauth/token<br/>code + code_verifier
+    Auth0->>Browser: access_token (RS256 JWT)
+    Note over Browser: AuthProvider.refresh()<br/>updates UI state, token in memory
+    Browser->>Backend: GET /collections<br/>Authorization: Bearer TOKEN
+    Backend-->>Auth0: fetch JWKS to verify signature
+    Note over Backend: AuthGuard verifies<br/>RS256 pinned, aud, iss, exp<br/>sub → req.user.ownerId
+    Backend->>Browser: 200 → data scoped to ownerId only
+```
+
+Authorization Code + PKCE ตั้งแต่กด "Log in" จนถึง backend verify token สำเร็จ และ scope response ด้วย `ownerId` ที่ได้จาก `sub` claim เท่านั้น
+
 ## /collections
 
 ### Endpoints
@@ -147,7 +200,7 @@ user นี้ ตรงกับความหมายมาตรฐาน�
 ใน body ใช้ไม่ได้"**
 
 ### จุดต่างจาก /collections: PUT vs PATCH กับ nullable field
-ช
+
 `Bookmark` มี field nullable สองตัว (`notes`, `collectionId`) ต่างจาก `Collection` ที่มี
 แค่ `name` เป็น field เดียว จึงต้องแยก semantics ให้ชัด:
 
@@ -167,6 +220,24 @@ user นี้ ตรงกับความหมายมาตรฐาน�
   ไม่ถูกสร้าง/ไม่ถูกย้าย), user B มองไม่เห็น/แก้ไม่ได้/ลบไม่ได้ bookmark ของ user A เลย
   (`404` ทุกท่า, ไม่โผล่ใน list ของ B), และ `PUT` เคลียร์ `collectionId` เป็น `null` จริง
   ตามที่ออกแบบไว้
+
+```mermaid
+flowchart TD
+    A["Incoming request"]
+    A -->|"/collections, /bookmarks..."| B["AuthGuard: verify Bearer JWT<br/>rejects if missing/invalid → 401"]
+    A -->|"/shared/:token"| F["@Public → no auth<br/>SharedController only"]
+
+    B --> C["sub → req.user.ownerId<br/>trusted identity for this request"]
+    C --> D["Query: WHERE id AND ownerId<br/>match, both, same query"]
+    D -->|"No match"| D1["404, always<br/>owned by someone else, or doesn't<br/>exist → indistinguishable"]
+    D -->|"Match"| D2["200 + owner's data<br/>only this request's owner's rows,<br/>never another's"]
+
+    F --> G["Lookup by shareToken only<br/>never touches ownerId"]
+    G --> H["GET-only controller<br/>no PUT/PATCH/DELETE route<br/>exists to call, period"]
+    H --> I["200 read-only<br/>no ownerId in response,<br/>scoped to exactly one token's collection"]
+```
+
+เทียบ path ปกติ (ต้อง auth, filter ด้วย `ownerId`) กับ path public ผ่าน share token (ไม่ auth เลย แต่ read-only และ scope แน่นด้วยกลไกคนละแบบ)
 
 ## Collection sharing (read-only share link)
 
